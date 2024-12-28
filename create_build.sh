@@ -38,7 +38,7 @@ for project_dir in $project_dirs; do
     mkdir -p "$build_dir"
 
     # Create a combined and minified JavaScript file
-    combined_js="$build_dir/index.js"
+    combined_js="$build_dir/index.min.js"
     > "$combined_js"  # Clear the file if it exists
 
     # Loop through all JS files in the project and combine them
