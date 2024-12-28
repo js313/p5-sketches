@@ -1,23 +1,26 @@
+const bgColor = "#070831";
+
 let res = 100;
 let lineHeight = 200;
-let maxAmplitude = 10;
-let initDamp = 1;
+let baseAmplitude = 10;
+let impulseAmplitude = 30;
+let damp = 1;
 let curPoints = [];
 let amps = [];
 let freq = 0.1; // Initial frequency value
+let noiseStepMult = 0.1;
 
 let impulseCheckbox; // Checkbox for triggering an impulse
 let impulseActive = false; // State for the impulse (whether it's active or not)
-let impulseStrength = 1; // Variable to store the impulse strength (for smooth interpolation)
+let impulseStrength = 0; // Variable to store the impulse strength (for smooth interpolation)
 
 function setup() {
-  // change on browser size change(method in p5 js)
-  createCanvas(800, 400);
+  createCanvas(windowWidth, windowHeight); // Set initial size based on window size
 
   // Initialize the points
   curPoints.push(createVector(0, lineHeight));
   for (let i = 1; i <= res; i++) {
-    curPoints.push(createVector((i * 800) / res, lineHeight));
+    curPoints.push(createVector((i * width) / res, lineHeight));
     amps.push(0);
   }
 
@@ -28,29 +31,30 @@ function setup() {
 }
 
 function draw() {
-  background(7, 8, 49, 10);
-  // experiment with fading trails
-  //   fill(0, 50);
+  // Create the fading effect using a semi-transparent rectangle
+  fill(7, 8, 49, 20); // Semi-transparent background (alpha = 20)
+  noStroke();
+  rect(0, 0, width, height); // Draw a rectangle covering the entire canvas
 
-  amps[0] = 10;
+  amps[0] = baseAmplitude;
 
   // Smoothly interpolate the impulse strength
   if (impulseActive) {
-    impulseStrength = lerp(impulseStrength, 10, 0.1); // Smoothly interpolate towards maxAmplitude
+    impulseStrength = lerp(impulseStrength, impulseAmplitude, 0.05); // Smoothly interpolate towards maxAmplitude
   } else {
-    impulseStrength = lerp(impulseStrength, 1, 0.05); // Smoothly return to 0 (no impulse)
+    impulseStrength = lerp(impulseStrength, 0, 0.05); // Smoothly return to 0 (no impulse)
   }
 
   // If the impulse is active, apply the interpolated impulse strength
-  amps[0] *= impulseStrength;
+  amps[0] += impulseStrength;
 
   // Update amps[0] based on noise
-  amps[0] += noise(frameCount * 0.05);
+  amps[0] += (noise(frameCount * noiseStepMult) * amps[0]) / 2;
 
   // Update the points based on the sine wave
   for (let i = 0; i <= res; i++) {
     curPoints[i].y =
-      (sin((frameCount - i) * freq) * amps[i]) / (initDamp * (i / 20 + 1)) +
+      (sin((frameCount - i) * freq) * amps[i]) / (damp * (i / 20 + 1)) +
       lineHeight;
   }
 
@@ -75,4 +79,15 @@ function draw() {
 // Function to toggle the impulse state when the checkbox is changed
 function toggleImpulse() {
   impulseActive = impulseCheckbox.checked();
+}
+
+// This will resize the canvas whenever the window is resized
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  // Recalculate the points based on the new canvas size
+  curPoints = [];
+  for (let i = 0; i <= res; i++) {
+    curPoints.push(createVector((i * width) / res, lineHeight));
+    amps.push(0);
+  }
 }

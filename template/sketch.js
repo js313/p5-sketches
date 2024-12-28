@@ -1,3 +1,5 @@
+const bgColor = "#070831";
+
 function setup() {
   createCanvas(400, 400);
 }
