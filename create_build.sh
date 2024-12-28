@@ -1,18 +1,36 @@
 #!/bin/bash
 
-# Ensure we are in the root of the repository
-repo_root="$(pwd)"
+# Get the absolute path of the current directory
+current_dir="$(pwd)"
+
+# Check if we're in the p5-sketches directory or its parent
+if [[ "$(basename "$current_dir")" == "p5-sketches" ]]; then
+  repo_root="$current_dir"
+else
+  # Assume p5-sketches is the root if not in it already
+  repo_root="$current_dir/p5-sketches"
+fi
+
+echo "Repo root: $repo_root"  # Debug output to check the repo root
+
+# Check if p5-sketches directory exists
+if [ ! -d "$repo_root" ]; then
+  echo "p5-sketches directory not found. Make sure you are in the repo root or parent."
+  exit 1
+fi
 
 # Get the list of modified files in the last commit
 modified_files=$(git diff --name-only HEAD~1 HEAD)
+echo "Modified files: $modified_files"  # Debug output to check modified files
 
-# Get the list of project directories (project1, project2, etc.)
-project_dirs=$(find p5-sketches -mindepth 1 -maxdepth 1 -type d)
+# Get the list of project directories (project1, project2, etc.) under p5-sketches
+project_dirs=$(find "$repo_root" -mindepth 1 -maxdepth 1 -type d)
+echo "Project directories found: $project_dirs"  # Debug output to check project directories
 
 # Loop through each project directory
 for project_dir in $project_dirs; do
-  # Check if any files in the project directory were modified
-  if echo "$modified_files" | grep -q "^$project_dir"; then
+  # Check if any files in the project directory were modified (case-insensitive comparison)
+  if echo "$modified_files" | grep -iq "^$(basename "$project_dir")"; then
     echo "Changes detected in $project_dir"
 
     # Create the 'build' directory if it doesn't exist
@@ -31,20 +49,11 @@ for project_dir in $project_dirs; do
       fi
     done
 
-    # Minify the combined JavaScript file using terser
-    terser "$combined_js" -o "$combined_js" --compress --mangle
+    # Use the local terser binary from node_modules/.bin
+    node_modules/.bin/terser "$combined_js" -o "$combined_js" --compress --mangle
 
-    # Stage the changes for commit (including the build dir)
-    git add "$build_dir"
-
-    echo "Build created and added for $project_dir"
+    echo "Build created in $build_dir"
   fi
 done
 
-# Commit the changes (including the build directories) with a message
-if git diff --cached --quiet; then
-  echo "No changes to commit"
-else
-  git commit -m "Add build directories and minified JS files"
-  echo "Changes committed"
-fi
+echo "Build creation complete. No commits made."

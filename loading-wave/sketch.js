@@ -40,9 +40,9 @@ function draw() {
 
   // Smoothly interpolate the impulse strength
   if (impulseActive) {
-    impulseStrength = lerp(impulseStrength, impulseAmplitude, 0.05); // Smoothly interpolate towards maxAmplitude
+    impulseStrength = lerp(impulseStrength, impulseAmplitude, 0.05);
   } else {
-    impulseStrength = lerp(impulseStrength, 0, 0.05); // Smoothly return to 0 (no impulse)
+    impulseStrength = lerp(impulseStrength, 0, 0.05);
   }
 
   // If the impulse is active, apply the interpolated impulse strength
