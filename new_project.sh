@@ -24,7 +24,7 @@ fi
 
 mkdir "$NEW_PROJECT_DIR"
 
-# Copy the contents of the template folder to the new project folder
-cp -r "$TEMPLATE_DIR/"* "$NEW_PROJECT_DIR/"
+# Copy the contents of the template folder to the new project folder, excluding 'build' folder
+rsync -av --exclude='build' "$TEMPLATE_DIR/" "$NEW_PROJECT_DIR/"
 
 echo "Project '$PROJECT_NAME' has been created successfully in '$NEW_PROJECT_DIR'."
