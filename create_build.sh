@@ -19,9 +19,14 @@ if [ ! -d "$repo_root" ]; then
   exit 1
 fi
 
-# Get the list of modified files in the last commit
-modified_files=$(git diff --name-only HEAD~1 HEAD)
-echo "Modified files: $modified_files"  # Debug output to check modified files
+# Get the list of modified, staged, and untracked files
+modified_files=$(git diff --name-only HEAD)
+staged_files=$(git diff --cached --name-only)
+untracked_files=$(git ls-files --others --exclude-standard)
+
+# Combine all files into a single list
+all_files=$(echo -e "$modified_files\n$staged_files\n$untracked_files" | sort -u)
+echo "All files considered: $all_files"  # Debug output
 
 # Get the list of project directories (project1, project2, etc.) under p5-sketches
 project_dirs=$(find "$repo_root" -mindepth 1 -maxdepth 1 -type d)
@@ -29,8 +34,8 @@ echo "Project directories found: $project_dirs"  # Debug output to check project
 
 # Loop through each project directory
 for project_dir in $project_dirs; do
-  # Check if any files in the project directory were modified (case-insensitive comparison)
-  if echo "$modified_files" | grep -iq "^$(basename "$project_dir")"; then
+  # Check if any files in the project directory were modified, staged, or are untracked
+  if echo "$all_files" | grep -iq "^$(basename "$project_dir")"; then
     echo "Changes detected in $project_dir"
 
     # Create the 'build' directory if it doesn't exist
