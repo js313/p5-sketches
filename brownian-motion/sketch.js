@@ -10,22 +10,36 @@ const maxTrailLength = 100;
 let gridWidth = 100,
   gridHeight = 100;
 let history = [];
+let bias = null;
+let biasStrength = 5;
+let clickIndicatorRadius = 15;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   gridWidth = windowWidth;
   gridHeight = windowHeight;
   let v = createVector(windowWidth / 2, windowHeight / 2);
+  bias = createVector(0, 0);
   history.push(v);
+  stroke(primaryColor);
+  noFill();
   background(bgColor);
 }
 
 function draw() {
-  background(7, 8, 49, 10); // fade effect
+  background(7, 8, 49, 25); // fade effect
   const hLastIdx = history.length - 1;
 
-  let x = history[hLastIdx].x + random(-maxStepSize, maxStepSize);
-  let y = history[hLastIdx].y + random(-maxStepSize, maxStepSize);
+  if (mouseIsPressed) {
+    bias.x = mouseX - history[history.length - 1].x;
+    bias.y = mouseY - history[history.length - 1].y;
+    bias.normalize();
+    bias.mult(biasStrength);
+    circle(mouseX, mouseY, clickIndicatorRadius);
+  }
+
+  let x = history[hLastIdx].x + random(-maxStepSize, maxStepSize) + bias.x;
+  let y = history[hLastIdx].y + random(-maxStepSize, maxStepSize) + bias.y;
 
   if (x < 0 || x > gridWidth) {
     x = (x + gridWidth) % gridWidth;
@@ -44,6 +58,10 @@ function draw() {
     strokeWeight(2);
     line(history[i - 1].x, history[i - 1].y, history[i].x, history[i].y);
   }
+}
+
+function mouseReleased() {
+  bias.x = bias.y = 0;
 }
 
 function windowResized() {
