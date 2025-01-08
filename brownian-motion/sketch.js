@@ -64,6 +64,10 @@ function mouseReleased() {
   bias.x = bias.y = 0;
 }
 
+function touchEnded() {
+  bias.x = bias.y = 0;
+}
+
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   gridWidth = windowWidth;
