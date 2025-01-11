@@ -1,14 +1,13 @@
 /// <reference path="../node_modules/@types/p5/global.d.ts" />
 
 class Polygon {
-  constructor(centre, numVertices, distFromCentre, mass, color, speed = 5) {
+  constructor(centre, numVertices, distFromCentre, mass, maxSpeed) {
     this.mass = mass;
-    this.speed = speed;
     this.rotation = 0;
-    this.color = color;
+    this.color = color(7, 8, 49);
+    this.defaultColor = color(7, 8, 49);
 
-    const rAngle = random(TWO_PI);
-    this.velocity = createVector(cos(rAngle), sin(rAngle)).mult(this.speed);
+    this.maxSpeed = maxSpeed;
     this.centre = centre;
     this.distFromCentre = distFromCentre;
     this.numVertices = numVertices;
@@ -48,7 +47,7 @@ class Polygon {
   }
 
   draw() {
-    stroke(this.color + 100);
+    stroke(this.color);
     fill(this.color);
     beginShape();
     for (let i = 0; i < this.numVertices; i++) {
@@ -57,21 +56,39 @@ class Polygon {
     endShape();
   }
 
-  update() {
-    let wallXCollided = false,
-      wallYCollided = false;
-    // framerate dependent
-    this.centre.add(this.velocity);
-    for (let i = 0; i < this.numVertices; i++) {
-      let vertex = this.vertices[i];
-      vertex.add(this.velocity);
-      if (vertex.x > width || vertex.x < 0) wallXCollided = true;
-      if (vertex.y > height || vertex.y < 0) wallYCollided = true;
-    }
-    this.calculateEdges();
-    this.draw();
+  move() {
+    let dx = 0;
+    let dy = 0;
+    if (keyIsDown(87)) dy -= 2; // W
+    if (keyIsDown(83)) dy += 2; // S
+    if (keyIsDown(65)) dx -= 2; // A
+    if (keyIsDown(68)) dx += 2; // D
 
-    if (wallXCollided) this.velocity.x = -this.velocity.x;
-    if (wallYCollided) this.velocity.y = -this.velocity.y;
+    let vel = createVector(dx, dy).normalize().mult(this.maxSpeed);
+    this.centre.add(vel);
+    for (let vert of this.vertices) {
+      vert.add(vel);
+    }
+  }
+
+  update() {
+    this.draw();
+  }
+
+  colliding() {
+    this.color = color(255, 0, 0);
+  }
+  notColliding() {
+    this.color = color(7, 8, 49);
+  }
+
+  isMouseInside() {
+    let d = dist(mouseX, mouseY, this.centre.x, this.centre.y);
+    let isSelected = false;
+    if (d <= this.distFromCentre) {
+      isSelected = true;
+      this.color = color(200, 8, 49);
+    } else this.color = color(7, 8, 49);
+    return isSelected;
   }
 }
