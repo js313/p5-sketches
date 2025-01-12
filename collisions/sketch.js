@@ -15,16 +15,14 @@ function setup() {
   polygons.push(
     new Polygon(createVector(300, 300), 5, 100, 100, 3, true, true)
   );
-  // polygons.push(
-  //   new Polygon(createVector(500, 100), 3, 50, 10, 5, false, true)
-  // );
-  // polygons.push(
-  //   new Polygon(createVector(500, 200), 3, 50, 3, 5, false, false)
-  // );
+  // polygons.push(new Polygon(createVector(500, 100), 3, 50, 10, 5, false, true));
   for (let i = 1; i < polygonCount; i++) {
     polygons.push(
       new Polygon(
-        createVector(random(0, windowWidth), random(0, windowHeight)),
+        createVector(
+          random(50, windowWidth - 50),
+          random(50, windowHeight - 50)
+        ),
         Math.floor(random(3, 10)),
         random(50, 100),
         random(5, 100),
@@ -35,6 +33,27 @@ function setup() {
     );
   }
   controllablePolygon = polygons[0];
+}
+
+function touchStarted() {
+  // Set the target for the controllable polygon when the screen is touched
+  if (controllablePolygon) {
+    controllablePolygon.target = createVector(mouseX, mouseY);
+  }
+}
+
+function touchMoved() {
+  // Set the target for the controllable polygon when the screen is touched
+  if (controllablePolygon) {
+    controllablePolygon.target = createVector(mouseX, mouseY);
+  }
+}
+
+function touchEnded() {
+  // Set the target for the controllable polygon when the screen is touched
+  if (controllablePolygon) {
+    controllablePolygon.target = controllablePolygon.center;
+  }
 }
 
 function draw() {

@@ -83,21 +83,54 @@ class Polygon {
   move() {
     let speed = 0;
     let turnAngle = 0;
+
+    // Keyboard input for WASD movement
     if (keyIsDown(87)) speed += this.maxSpeed; // W
     if (keyIsDown(83)) speed -= this.maxSpeed; // S
     if (keyIsDown(65)) turnAngle -= PI / 48; // A
     if (keyIsDown(68)) turnAngle += PI / 48; // D
 
-    let velocity = this.facingDir.copy().mult(speed);
+    // Apply keyboard movement if a key is pressed
+    if (speed !== 0 || turnAngle !== 0) {
+      this.target = null; // Disable touch-based target
+      let velocity = this.facingDir.copy().mult(speed);
 
-    this.centre.add(velocity);
-    for (let i = 0; i < this.vertices.length; i++) {
-      let vertex = this.vertices[i];
-      vertex.add(velocity);
-      vertex.sub(this.centre).rotate(turnAngle).add(this.centre);
+      this.centre.add(velocity);
+      for (let i = 0; i < this.vertices.length; i++) {
+        let vertex = this.vertices[i];
+        vertex.add(velocity);
+        vertex.sub(this.centre).rotate(turnAngle).add(this.centre);
+      }
+      this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
+      this.calculateEdges();
+      return;
     }
-    this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
-    this.calculateEdges();
+
+    // Touch input for target-based movement
+    if (this.target && p5.Vector.sub(this.target, this.centre).magSq() > 100) {
+      let targetDirection = p5.Vector.sub(this.target, this.centre).normalize();
+
+      // Gradually rotate facingDir to align with the targetDirection
+      let angleToTarget = this.facingDir.angleBetween(targetDirection);
+      let rotationStep = constrain(angleToTarget, -PI / 48, PI / 48); // Smooth rotation
+      this.facingDir.rotate(rotationStep);
+
+      // Move forward in the direction the polygon is facing
+      speed = this.maxSpeed;
+
+      // Calculate velocity in the facing direction
+      let velocity = this.facingDir.copy().mult(speed);
+
+      // Update the position of the polygon and its vertices
+      this.centre.add(velocity);
+      for (let i = 0; i < this.vertices.length; i++) {
+        let vertex = this.vertices[i];
+        vertex.add(velocity);
+        vertex.sub(this.centre).rotate(rotationStep).add(this.centre);
+      }
+
+      this.calculateEdges();
+    }
   }
 
   moveBy(displacement) {
