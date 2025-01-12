@@ -4,9 +4,11 @@ function satCollision(polygon1, polygon2) {
   const normals = [
     // ...polygon1.edges.map((edge) => p5.Vector.rotate(edge, PI / 2)),
     // ...polygon2.edges.map((edge) => p5.Vector.rotate(edge, PI / 2)),
-    ...polygon1.edges.map((edge) => createVector(-edge.y, edge.x)),
-    ...polygon2.edges.map((edge) => createVector(-edge.y, edge.x)),
+    ...polygon1.edges.map((edge) => createVector(-edge.y, edge.x).normalize()),
+    ...polygon2.edges.map((edge) => createVector(-edge.y, edge.x).normalize()),
   ];
+
+  let overlap = Infinity;
 
   for (let i = 0; i < normals.length; i++) {
     normal = normals[i];
@@ -23,7 +25,10 @@ function satCollision(polygon1, polygon2) {
       max2 = max(max2, p5.Vector.dot(normal, vertex));
     });
 
-    if (min2 > max1 || max2 < min1) return false;
+    if (min2 > max1 || max2 < min1) return null;
+
+    overlap = min(overlap, min(max1, max2) - max(min1, min2));
   }
-  return true;
+
+  return polygon2.centre.copy().sub(polygon1.centre).normalize().mult(overlap);
 }

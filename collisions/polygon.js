@@ -1,26 +1,44 @@
 /// <reference path="../node_modules/@types/p5/global.d.ts" />
 
+const primaryColor = "#fff4d6"; // (255, 244, 214)
+const secondaryColor = "#908a76"; // (144, 138, 118)
+
 class Polygon {
-  constructor(centre, numVertices, distFromCentre, mass, maxSpeed) {
+  constructor(
+    centre,
+    numVertices,
+    distFromCentre,
+    mass,
+    maxSpeed,
+    controllable,
+    movable
+  ) {
     this.mass = mass;
-    this.rotation = 0;
-    this.color = color(7, 8, 49);
-    this.defaultColor = color(7, 8, 49);
+    this.color = movable ? secondaryColor : color(50);
+    this.defaultColor = this.color;
+    this.movable = movable;
+    this.controllable = controllable;
 
     this.maxSpeed = maxSpeed;
+    this.facingDir = createVector(0, 0);
     this.centre = centre;
     this.distFromCentre = distFromCentre;
     this.numVertices = numVertices;
     this.createShape(numVertices);
+    this.displacement = createVector(0, 0);
   }
 
   createShape() {
     let randomAngles = [];
+    let angleRange = (2 * PI) / this.numVertices;
+    let minAngle = 0;
+    let maxAngle = this.controllable ? 0 : angleRange;
 
     for (let i = 0; i < this.numVertices; i++) {
-      randomAngles.push(random(TWO_PI));
+      randomAngles.push(random(minAngle, maxAngle));
+      minAngle += angleRange;
+      maxAngle += angleRange;
     }
-    randomAngles.sort();
     this.vertices = [];
     for (let i = 0; i < this.numVertices; i++) {
       let vert = createVector(
@@ -31,44 +49,63 @@ class Polygon {
       this.vertices.push(vert);
     }
 
+    this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
+
     this.calculateEdges();
   }
 
   calculateEdges() {
     this.edges = [];
-    for (let i = 1; i < this.numVertices; i++) {
-      let edge = this.vertices[i].copy().sub(this.vertices[i - 1]);
-      this.edges.push(edge);
+    for (let i = 0; i < this.vertices.length; i++) {
+      let next = (i + 1) % this.vertices.length;
+      this.edges.push(this.vertices[next].copy().sub(this.vertices[i]));
     }
-    let closingEdge = this.vertices[0]
-      .copy()
-      .sub(this.vertices[this.numVertices - 1]);
-    this.edges.push(closingEdge);
   }
 
   draw() {
-    stroke(this.color);
+    stroke(primaryColor);
+    strokeWeight(3);
     fill(this.color);
     beginShape();
     for (let i = 0; i < this.numVertices; i++) {
       vertex(this.vertices[i].x, this.vertices[i].y);
     }
-    endShape();
+    endShape(CLOSE);
+    this.controllable &&
+      line(
+        this.centre.x,
+        this.centre.y,
+        this.vertices[0].x,
+        this.vertices[0].y
+      );
   }
 
   move() {
-    let dx = 0;
-    let dy = 0;
-    if (keyIsDown(87)) dy -= 2; // W
-    if (keyIsDown(83)) dy += 2; // S
-    if (keyIsDown(65)) dx -= 2; // A
-    if (keyIsDown(68)) dx += 2; // D
+    let speed = 0;
+    let turnAngle = 0;
+    if (keyIsDown(87)) speed += this.maxSpeed; // W
+    if (keyIsDown(83)) speed -= this.maxSpeed; // S
+    if (keyIsDown(65)) turnAngle -= PI / 48; // A
+    if (keyIsDown(68)) turnAngle += PI / 48; // D
 
-    let vel = createVector(dx, dy).normalize().mult(this.maxSpeed);
-    this.centre.add(vel);
-    for (let vert of this.vertices) {
-      vert.add(vel);
+    let velocity = this.facingDir.copy().mult(speed);
+
+    this.centre.add(velocity);
+    for (let i = 0; i < this.vertices.length; i++) {
+      let vertex = this.vertices[i];
+      vertex.add(velocity);
+      vertex.sub(this.centre).rotate(turnAngle).add(this.centre);
     }
+    this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
+    this.calculateEdges();
+  }
+
+  moveBy(displacement) {
+    this.centre.add(displacement);
+    for (let i = 0; i < this.vertices.length; i++) {
+      this.vertices[i].add(displacement);
+    }
+    this.calculateEdges();
   }
 
   update() {
@@ -76,19 +113,9 @@ class Polygon {
   }
 
   colliding() {
-    this.color = color(255, 0, 0);
+    if (this.movable && !this.controllable) this.color = color(primaryColor);
   }
   notColliding() {
-    this.color = color(7, 8, 49);
-  }
-
-  isMouseInside() {
-    let d = dist(mouseX, mouseY, this.centre.x, this.centre.y);
-    let isSelected = false;
-    if (d <= this.distFromCentre) {
-      isSelected = true;
-      this.color = color(200, 8, 49);
-    } else this.color = color(7, 8, 49);
-    return isSelected;
+    this.color = this.defaultColor;
   }
 }
