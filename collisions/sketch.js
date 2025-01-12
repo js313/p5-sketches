@@ -7,6 +7,7 @@ let polygons = [];
 let controllablePolygon = null;
 
 function windowResized() {
+  createCanvas(windowWidth, windowHeight);
   background(bgColor); // to fix color changing on window resize
 }
 
