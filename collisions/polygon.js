@@ -11,7 +11,8 @@ class Polygon {
     mass,
     maxSpeed,
     controllable,
-    movable
+    movable, // no need of movable variable, setting mass to infinte will have the same effect if collsion resolution algorithm accounts for it
+    vertices
   ) {
     this.mass = mass;
     this.color = movable ? secondaryColor : color(50);
@@ -24,31 +25,33 @@ class Polygon {
     this.centre = centre;
     this.distFromCentre = distFromCentre;
     this.numVertices = numVertices;
-    this.createShape(numVertices);
+    this.vertices = vertices;
+    this.createShape();
     this.displacement = createVector(0, 0);
   }
 
   createShape() {
-    let randomAngles = [];
-    let angleRange = (2 * PI) / this.numVertices;
-    let minAngle = 0;
-    let maxAngle = this.controllable ? 0 : angleRange;
+    if (!this.vertices) {
+      let randomAngles = [];
+      let angleRange = (2 * PI) / this.numVertices;
+      let minAngle = 0;
+      let maxAngle = this.controllable ? 0 : angleRange;
 
-    for (let i = 0; i < this.numVertices; i++) {
-      randomAngles.push(random(minAngle, maxAngle));
-      minAngle += angleRange;
-      maxAngle += angleRange;
-    }
-    this.vertices = [];
-    for (let i = 0; i < this.numVertices; i++) {
-      let vert = createVector(
-        this.centre.x + this.distFromCentre * cos(randomAngles[i]),
-        this.centre.y + this.distFromCentre * sin(randomAngles[i])
-      );
+      for (let i = 0; i < this.numVertices; i++) {
+        randomAngles.push(random(minAngle, maxAngle));
+        minAngle += angleRange;
+        maxAngle += angleRange;
+      }
+      this.vertices = [];
+      for (let i = 0; i < this.numVertices; i++) {
+        let vert = createVector(
+          this.centre.x + this.distFromCentre * cos(randomAngles[i]),
+          this.centre.y + this.distFromCentre * sin(randomAngles[i])
+        );
 
-      this.vertices.push(vert);
-    }
-
+        this.vertices.push(vert);
+      }
+    } else this.vertices = this.vertices;
     this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
 
     this.calculateEdges();
@@ -64,7 +67,7 @@ class Polygon {
 
   draw() {
     stroke(primaryColor);
-    strokeWeight(3);
+    strokeWeight(1);
     fill(this.color);
     beginShape();
     for (let i = 0; i < this.numVertices; i++) {
@@ -146,7 +149,7 @@ class Polygon {
   }
 
   colliding() {
-    if (this.movable && !this.controllable) this.color = color(primaryColor);
+    // if (this.movable && !this.controllable) this.color = color(primaryColor);
   }
   notColliding() {
     this.color = this.defaultColor;

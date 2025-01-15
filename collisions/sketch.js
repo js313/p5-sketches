@@ -5,6 +5,9 @@ const bgColor = "#070831"; // (7, 8, 49)
 let polygonCount = 10;
 let polygons = [];
 let controllablePolygon = null;
+let gravity = null;
+let gravityStep = null;
+const subSteps = 10;
 
 function windowResized() {
   createCanvas(windowWidth, windowHeight);
@@ -13,16 +16,17 @@ function windowResized() {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+  gravity = createVector(0, 10);
+  gravityStep = gravity.copy().mult(1 / subSteps);
   polygons.push(
     new Polygon(createVector(300, 300), 5, 100, 100, 3, true, true)
   );
-  // polygons.push(new Polygon(createVector(500, 100), 3, 50, 10, 5, false, true));
-  for (let i = 1; i < polygonCount; i++) {
+  for (let i = 1; i < polygonCount - 1; i++) {
     polygons.push(
       new Polygon(
         createVector(
           random(50, windowWidth - 50),
-          random(50, windowHeight - 50)
+          random(100, windowHeight - 100)
         ),
         Math.floor(random(3, 10)),
         random(50, 100),
@@ -33,6 +37,23 @@ function setup() {
       )
     );
   }
+  polygons.push(
+    new Polygon(
+      createVector(width / 2, height),
+      4,
+      width / 2,
+      10000,
+      0,
+      false,
+      false,
+      [
+        createVector(-10, height - 100),
+        createVector(width + 10, height - 100),
+        createVector(width + 10, height + 10),
+        createVector(-10, height + 10),
+      ]
+    )
+  );
   controllablePolygon = polygons[0];
 }
 
@@ -59,11 +80,28 @@ function touchEnded() {
 
 function draw() {
   background(bgColor);
+
+  for (let i = 0; i < subSteps; i++) {
+    // Apply gravity in small steps and check collision, for precision
+    collisionCheck();
+    for (let polygon of polygons) {
+      if (polygon.movable) polygon.moveBy(gravityStep);
+    }
+  }
+
   for (let polygon of polygons) {
     polygon.update();
   }
-  collisionCheck();
-  controllablePolygon.move();
+  if (controllablePolygon) controllablePolygon.move();
+
+  displayFPS();
+}
+
+function displayFPS() {
+  fill(255);
+  textSize(16);
+  textAlign(RIGHT, TOP);
+  text("FPS: " + Math.round(frameRate()), width - 10, 10);
 }
 
 function collisionCheck() {
