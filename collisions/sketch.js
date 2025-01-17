@@ -3,11 +3,10 @@
 const bgColor = "#070831"; // (7, 8, 49)
 
 let polygonCount = 10;
+let manuallyAddedPolygons = 4;
 let polygons = [];
 let controllablePolygon = null;
 let gravity = null;
-let gravityStep = null;
-const subSteps = 10;
 
 function windowResized() {
   createCanvas(windowWidth, windowHeight);
@@ -17,79 +16,102 @@ function windowResized() {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   gravity = createVector(0, 10);
-  gravityStep = gravity.copy().mult(1 / subSteps);
   polygons.push(
-    new Polygon(createVector(300, 300), 5, 100, 100, 3, true, true)
+    new Polygon({
+      centre: createVector(300, 300),
+      numVertices: 5,
+      distFromCentre: 50,
+      mass: 100,
+      maxSpeed: 3,
+      elasticity: 0.5,
+      controllable: true,
+    })
   );
-  for (let i = 1; i < polygonCount - 1; i++) {
+  for (let i = 0; i < polygonCount - manuallyAddedPolygons; i++) {
     polygons.push(
-      new Polygon(
-        createVector(
+      new Polygon({
+        centre: createVector(
           random(50, windowWidth - 50),
           random(100, windowHeight - 100)
         ),
-        Math.floor(random(3, 10)),
-        random(50, 100),
-        random(5, 100),
-        random(5, 10),
-        false,
-        true
-      )
+        numVertices: Math.floor(random(3, 10)),
+        distFromCentre: random(20, 30),
+        mass: random(5, 100),
+        maxSpeed: random(5, 10),
+        elasticity: 0.5,
+      })
     );
   }
   polygons.push(
-    new Polygon(
-      createVector(width / 2, height),
-      4,
-      width / 2,
-      10000,
-      0,
-      false,
-      false,
-      [
+    new Polygon({
+      centre: createVector(5, (height / 2 - height + 101) / 2),
+      numVertices: 4,
+      distFromCentre: width / 2,
+      vertices: [
+        createVector(-10, height / 2),
+        createVector(5, height / 2),
+        createVector(5, height - 101),
+        createVector(-10, height - 101),
+      ],
+      mass: 10000,
+      maxSpeed: 0,
+      elasticity: 0.5,
+      movable: false,
+    })
+  );
+  polygons.push(
+    new Polygon({
+      centre: createVector(width / 2, height),
+      numVertices: 4,
+      distFromCentre: width / 2,
+      vertices: [
         createVector(-10, height - 100),
         createVector(width + 10, height - 100),
         createVector(width + 10, height + 10),
         createVector(-10, height + 10),
-      ]
-    )
+      ],
+      mass: 10000,
+      maxSpeed: 0,
+      elasticity: 0.5,
+      movable: false,
+    })
+  );
+  polygons.push(
+    new Polygon({
+      centre: createVector(width + 5, (height / 2 - height + 101) / 2),
+      numVertices: 4,
+      distFromCentre: width / 2,
+      vertices: [
+        createVector(width - 5, height / 2),
+        createVector(width + 10, height / 2),
+        createVector(width + 10, height - 101),
+        createVector(width - 5, height - 101),
+      ],
+      mass: 10000,
+      maxSpeed: 0,
+      elasticity: 0.5,
+      movable: false,
+    })
   );
   controllablePolygon = polygons[0];
-}
-
-function touchStarted() {
-  // Set the target for the controllable polygon when the screen is touched
-  if (controllablePolygon) {
-    controllablePolygon.target = createVector(mouseX, mouseY);
-  }
-}
-
-function touchMoved() {
-  // Set the target for the controllable polygon when the screen is touched
-  if (controllablePolygon) {
-    controllablePolygon.target = createVector(mouseX, mouseY);
-  }
-}
-
-function touchEnded() {
-  // Set the target for the controllable polygon when the screen is touched
-  if (controllablePolygon) {
-    controllablePolygon.target = controllablePolygon.center;
-  }
 }
 
 function draw() {
   background(bgColor);
 
-  for (let i = 0; i < subSteps; i++) {
-    // Apply gravity in small steps and check collision, for precision
-    collisionCheck();
-    for (let polygon of polygons) {
-      if (polygon.movable) polygon.moveBy(gravityStep);
-    }
+  if (mouseIsPressed) {
+    strokeWeight(5);
+    line(
+      controllablePolygon.centre.x,
+      controllablePolygon.centre.y,
+      mouseX,
+      mouseY
+    );
   }
 
   for (let polygon of polygons) {
+    collisionCheck();
+    polygon.applyForce(gravity);
     polygon.update();
   }
   if (controllablePolygon) controllablePolygon.move();
@@ -105,22 +127,28 @@ function displayFPS() {
 }
 
 function collisionCheck() {
-  let inCollision = new Set();
-
   for (let i = 0; i < polygonCount; i++) {
-    polygons[i].notColliding();
     for (let j = i + 1; j < polygonCount; j++) {
       let mtv = satCollision(polygons[i], polygons[j]);
       if (mtv) {
-        inCollision.add(i);
-        inCollision.add(j);
         collisionResolution(polygons[i], polygons[j], mtv);
       }
     }
   }
-  inCollision.forEach((i) => polygons[i].colliding());
 }
 
 function collisionResolution(polygon1, polygon2, mtv) {
+  // To prevent polygons slowly sinking into each other as the linear resolution
+  // does not depend on how much the polygons are overlapping
   staticResolve(polygon1, polygon2, mtv);
+  linearResolve(polygon1, polygon2, mtv);
+}
+
+// Touch controls
+function touchEnded() {
+  if (controllablePolygon) {
+    controllablePolygon.applyImpulse(
+      p5.Vector.sub(createVector(mouseX, mouseY), controllablePolygon.centre)
+    );
+  }
 }

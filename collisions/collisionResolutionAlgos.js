@@ -19,3 +19,25 @@ function staticResolve(polygon1, polygon2, mtv) {
     polygon2.moveBy(mtv);
   }
 }
+
+function linearResolve(polygon1, polygon2, mtv) {
+  let collisionAxis = mtv.copy().normalize();
+  let vrel = polygon2.velocity.copy().sub(polygon1.velocity).dot(collisionAxis);
+
+  // Ignore if the polygons are separating or stationary
+  if (vrel >= 0) return;
+
+  // Coefficient of restitution (elasticity)
+  let cor = min(polygon1.elasticity, polygon2.elasticity);
+
+  // Impulse magnitude
+  let numerator = vrel * (1 + cor);
+  let impulse = numerator / (polygon1.invMass + polygon2.invMass);
+
+  // Impulse vectors
+  let impulseVector = collisionAxis.copy().mult(impulse);
+
+  // Apply impulses
+  if (polygon1.movable) polygon1.applyImpulse(impulseVector);
+  if (polygon2.movable) polygon2.applyImpulse(impulseVector.mult(-1));
+}

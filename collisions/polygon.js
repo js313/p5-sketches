@@ -4,17 +4,19 @@ const primaryColor = "#fff4d6"; // (255, 244, 214)
 const secondaryColor = "#908a76"; // (144, 138, 118)
 
 class Polygon {
-  constructor(
+  // INIT
+  constructor({
     centre,
     numVertices,
     distFromCentre,
+    vertices,
     mass,
     maxSpeed,
-    controllable,
-    movable, // no need of movable variable, setting mass to infinte will have the same effect if collsion resolution algorithm accounts for it
-    vertices
-  ) {
-    this.mass = mass;
+    elasticity,
+    controllable = false,
+    movable = true,
+    // no need of movable variable, setting mass to infinte will have the same effect if collsion resolution algorithm accounts for it
+  }) {
     this.color = movable ? secondaryColor : color(50);
     this.defaultColor = this.color;
     this.movable = movable;
@@ -27,7 +29,12 @@ class Polygon {
     this.numVertices = numVertices;
     this.vertices = vertices;
     this.createShape();
-    this.displacement = createVector(0, 0);
+
+    this.mass = mass;
+    this.invMass = mass === Infinity ? 0 : 1 / mass;
+    this.elasticity = elasticity;
+    this.force = createVector(0, 0);
+    this.velocity = createVector(0, 0);
   }
 
   createShape() {
@@ -52,8 +59,8 @@ class Polygon {
         this.vertices.push(vert);
       }
     } else this.vertices = this.vertices;
-    this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
 
+    this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
     this.calculateEdges();
   }
 
@@ -65,6 +72,7 @@ class Polygon {
     }
   }
 
+  // DRAW
   draw() {
     stroke(primaryColor);
     strokeWeight(1);
@@ -83,59 +91,37 @@ class Polygon {
       );
   }
 
-  move() {
-    let speed = 0;
-    let turnAngle = 0;
-
-    // Keyboard input for WASD movement
-    if (keyIsDown(87)) speed += this.maxSpeed; // W
-    if (keyIsDown(83)) speed -= this.maxSpeed; // S
-    if (keyIsDown(65)) turnAngle -= PI / 48; // A
-    if (keyIsDown(68)) turnAngle += PI / 48; // D
-
-    // Apply keyboard movement if a key is pressed
-    if (speed !== 0 || turnAngle !== 0) {
-      this.target = null; // Disable touch-based target
-      let velocity = this.facingDir.copy().mult(speed);
-
-      this.centre.add(velocity);
-      for (let i = 0; i < this.vertices.length; i++) {
-        let vertex = this.vertices[i];
-        vertex.add(velocity);
-        vertex.sub(this.centre).rotate(turnAngle).add(this.centre);
+  // PHYSICS
+  update() {
+    if (this.movable) {
+      this.velocity.add(p5.Vector.mult(this.force, this.invMass));
+      this.centre.add(this.velocity);
+      for (let vertex of this.vertices) {
+        vertex.add(this.velocity);
       }
       this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
       this.calculateEdges();
-      return;
+
+      this.force.set(0, 0);
     }
 
-    // Touch input for target-based movement
-    if (this.target && p5.Vector.sub(this.target, this.centre).magSq() > 100) {
-      let targetDirection = p5.Vector.sub(this.target, this.centre).normalize();
-
-      // Gradually rotate facingDir to align with the targetDirection
-      let angleToTarget = this.facingDir.angleBetween(targetDirection);
-      let rotationStep = constrain(angleToTarget, -PI / 48, PI / 48); // Smooth rotation
-      this.facingDir.rotate(rotationStep);
-
-      // Move forward in the direction the polygon is facing
-      speed = this.maxSpeed;
-
-      // Calculate velocity in the facing direction
-      let velocity = this.facingDir.copy().mult(speed);
-
-      // Update the position of the polygon and its vertices
-      this.centre.add(velocity);
-      for (let i = 0; i < this.vertices.length; i++) {
-        let vertex = this.vertices[i];
-        vertex.add(velocity);
-        vertex.sub(this.centre).rotate(rotationStep).add(this.centre);
-      }
-
-      this.calculateEdges();
-    }
+    this.draw();
   }
 
+  applyForce(force) {
+    if (!this.movable) return;
+
+    this.force.add(force);
+  }
+
+  applyImpulse(impulse) {
+    if (!this.movable) return;
+
+    // impulse represents a quick, instantaneous change in momentum
+    this.velocity.add(p5.Vector.mult(impulse, this.invMass));
+  }
+
+  // Keep for static resolution
   moveBy(displacement) {
     this.centre.add(displacement);
     for (let i = 0; i < this.vertices.length; i++) {
@@ -144,14 +130,26 @@ class Polygon {
     this.calculateEdges();
   }
 
-  update() {
-    this.draw();
-  }
+  // Keep for testing without gravity
+  move() {
+    let force = 0;
+    let turnAngle = 0;
 
-  colliding() {
-    // if (this.movable && !this.controllable) this.color = color(primaryColor);
-  }
-  notColliding() {
-    this.color = this.defaultColor;
+    // Keyboard input for WASD movement
+    if (keyIsDown(87)) force += 5; // W
+    if (keyIsDown(83)) force -= 5; // S
+    if (keyIsDown(65)) turnAngle -= PI / 48; // A
+    if (keyIsDown(68)) turnAngle += PI / 48; // D
+
+    // Apply keyboard movement if a key is pressed
+    this.applyForce(this.facingDir.copy().mult(force));
+
+    for (let i = 0; i < this.vertices.length; i++) {
+      let vertex = this.vertices[i];
+      vertex.sub(this.centre).rotate(turnAngle).add(this.centre);
+    }
+    this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
+    this.calculateEdges();
+    return;
   }
 }

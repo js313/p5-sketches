@@ -9,7 +9,7 @@ function satCollision(polygon1, polygon2) {
   ];
 
   let overlap = Infinity;
-  let collisionAxis = null;
+  let mtv = null;
 
   for (let i = 0; i < normals.length; i++) {
     normal = normals[i];
@@ -30,14 +30,13 @@ function satCollision(polygon1, polygon2) {
 
     if (min(max1, max2) - max(min1, min2) < overlap) {
       overlap = min(max1, max2) - max(min1, min2);
-      collisionAxis = normal;
+      mtv = normal;
     }
 
     overlap = min(overlap, min(max1, max2) - max(min1, min2));
   }
-
   // To make sure the direction of the collision axis is from polygon1 to polygon2
   let direction = polygon2.centre.copy().sub(polygon1.centre).normalize();
-  if (p5.Vector.dot(direction, collisionAxis) < 0) collisionAxis.mult(-1);
-  return collisionAxis.mult(overlap);
+  if (p5.Vector.dot(direction, mtv) < 0) mtv.mult(-1);
+  return mtv.mult(overlap);
 }
