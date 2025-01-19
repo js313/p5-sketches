@@ -2,7 +2,7 @@
 
 const bgColor = "#070831"; // (7, 8, 49)
 
-let polygonCount = 10;
+let polygonCount = 6;
 let manuallyAddedPolygons = 4;
 let polygons = [];
 let controllablePolygon = null;
@@ -129,19 +129,30 @@ function displayFPS() {
 function collisionCheck() {
   for (let i = 0; i < polygonCount; i++) {
     for (let j = i + 1; j < polygonCount; j++) {
-      let mtv = satCollision(polygons[i], polygons[j]);
+      let { mtv, collisionPoints } =
+        satCollision(polygons[i], polygons[j]) ?? {};
       if (mtv) {
-        collisionResolution(polygons[i], polygons[j], mtv);
+        collisionResolution(polygons[i], polygons[j], mtv, collisionPoints);
+        collisionPoints.forEach((pointInfo) => {
+          stroke(255, 0, 0);
+          strokeWeight(10);
+
+          let pointtd =
+            pointInfo.polygon === 1
+              ? polygons[i].vertices[pointInfo.pointIndex]
+              : polygons[j].vertices[pointInfo.pointIndex];
+          if (!pointtd) console.log(pointInfo);
+          point(pointtd.x, pointtd.y, 10);
+        });
       }
     }
   }
 }
 
-function collisionResolution(polygon1, polygon2, mtv) {
-  // To prevent polygons slowly sinking into each other as the linear resolution
-  // does not depend on how much the polygons are overlapping
-  staticResolve(polygon1, polygon2, mtv);
-  linearResolve(polygon1, polygon2, mtv);
+function collisionResolution(polygon1, polygon2, mtv, collisionPoints) {
+  // staticResolve(polygon1, polygon2, mtv);
+  // linearResolve(polygon1, polygon2, mtv);
+  dynamicResolve(polygon1, polygon2, mtv, collisionPoints);
 }
 
 // Touch controls

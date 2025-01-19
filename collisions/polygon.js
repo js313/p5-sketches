@@ -24,7 +24,7 @@ class Polygon {
 
     this.maxSpeed = maxSpeed;
     this.facingDir = createVector(0, 0);
-    this.centre = centre;
+    this.centre = centre; // Calculate the actual centre of mass, after vertices are generated
     this.distFromCentre = distFromCentre;
     this.numVertices = numVertices;
     this.vertices = vertices;
@@ -35,7 +35,53 @@ class Polygon {
     this.elasticity = elasticity;
     this.force = createVector(0, 0);
     this.velocity = createVector(0, 0);
+
+    this.angularVelocity = 0;
+    this.torque = 0;
+    this.area = this.calculateArea();
+    this.momentOfInertia = this.calculateMomentOfInertia();
+    this.invMomentOfInertia = 1 / this.momentOfInertia;
+
+    console.log(this.area, this.momentOfInertia);
   }
+
+  calculateArea() {
+    let area = 0,
+      verts = this.vertices.map((vertex) => vertex.copy().sub(this.centre)),
+      vertsLen = verts.length;
+    for (let i = 0; i < vertsLen; i++) {
+      area += abs(
+        verts[i].x * verts[(i + 1) % vertsLen].y -
+          verts[i].y * verts[(i + 1) % vertsLen].x
+      );
+    }
+    return area / 2;
+  }
+
+  calculateMomentOfInertia() {
+    let I = 0;
+    let rho = this.mass / this.area;
+    let verts = this.vertices.map((vertex) => vertex.copy().sub(this.centre)),
+      vertsLen = verts.length;
+    for (let i = 0; i < vertsLen; i++) {
+      let xi = verts[i].x,
+        yi = verts[i].y;
+      let xin = verts[(i + 1) % vertsLen].x,
+        yin = verts[(i + 1) % vertsLen].y;
+
+      I +=
+        (xi * yin - xin * yi) *
+        (xi * xi + xi * xin + xin * xin + yi * yi + yi * yin + yin * yin);
+    }
+    return (I * rho) / 12;
+  }
+
+  // calculateMomentOfInertia() {
+  //   if (this.mass === Infinity) return Infinity;
+  //   return (
+  //     (1 / 12) * this.mass * (2 * this.distFromCentre * this.distFromCentre)
+  //   ); // Simplified approximation
+  // }
 
   createShape() {
     if (!this.vertices) {
@@ -96,13 +142,21 @@ class Polygon {
     if (this.movable) {
       this.velocity.add(p5.Vector.mult(this.force, this.invMass));
       this.centre.add(this.velocity);
-      for (let vertex of this.vertices) {
-        vertex.add(this.velocity);
+
+      for (let i = 0; i < this.vertices.length; i++) {
+        this.vertices[i].add(this.velocity);
+        this.vertices[i] = this.vertices[i]
+          .copy()
+          .sub(this.centre)
+          .rotate(this.angularVelocity)
+          .add(this.centre);
       }
+
       this.facingDir = this.vertices[0].copy().sub(this.centre).normalize();
       this.calculateEdges();
 
       this.force.set(0, 0);
+      this.angularVelocity = 0;
     }
 
     this.draw();
@@ -117,8 +171,13 @@ class Polygon {
   applyImpulse(impulse) {
     if (!this.movable) return;
 
-    // impulse represents a quick, instantaneous change in momentum
     this.velocity.add(p5.Vector.mult(impulse, this.invMass));
+  }
+
+  applyRotationImpulse(impulse, point) {
+    this.angularVelocity =
+      p5.Vector.cross(p5.Vector.sub(point, this.centre), impulse).z *
+      this.invMomentOfInertia;
   }
 
   // Keep for static resolution

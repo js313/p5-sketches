@@ -38,5 +38,59 @@ function satCollision(polygon1, polygon2) {
   // To make sure the direction of the collision axis is from polygon1 to polygon2
   let direction = polygon2.centre.copy().sub(polygon1.centre).normalize();
   if (p5.Vector.dot(direction, mtv) < 0) mtv.mult(-1);
-  return mtv.mult(overlap);
+  return {
+    mtv: mtv.mult(overlap),
+    collisionPoints: getCollisionPoints(polygon1, polygon2),
+  };
+}
+
+function getCollisionPoints(polygon1, polygon2) {
+  let collisionPointIndices = [];
+
+  // Check points of polygon1 against polygon2
+  polygon1.vertices.forEach((vertex, index) => {
+    if (isPointInsidePolygon(vertex, polygon2.vertices)) {
+      collisionPointIndices.push({ polygon: 1, pointIndex: index });
+    }
+  });
+
+  // Check points of polygon2 against polygon1
+  polygon2.vertices.forEach((vertex, index) => {
+    if (isPointInsidePolygon(vertex, polygon1.vertices)) {
+      collisionPointIndices.push({ polygon: 2, pointIndex: index });
+    }
+  });
+
+  return collisionPointIndices;
+}
+
+// Ray cast method
+function isPointInsidePolygon(point, vertices) {
+  let vertLen = vertices.length;
+  let y = point.y,
+    minDx = point.x;
+  let numIntersections = 0;
+
+  for (let i = 0; i < vertLen; i++) {
+    let x1 = vertices[i].x,
+      y1 = vertices[i].y;
+    let x2 = vertices[(i + 1) % vertLen].x,
+      y2 = vertices[(i + 1) % vertLen].y;
+
+    // Check for horizontal ray crossing
+    if (y1 > y2) {
+      // Swap if y1 is greater than y2
+      [x1, y1, x2, y2] = [x2, y2, x1, y1];
+    }
+
+    // Only check for intersection if the point is in the y-range of the edge
+    if (y > y1 && y <= y2) {
+      let intersectionX = x1 + ((y - y1) * (x2 - x1)) / (y2 - y1);
+      if (intersectionX >= minDx) {
+        numIntersections++;
+      }
+    }
+  }
+
+  return numIntersections % 2 !== 0; // Odd intersections mean inside
 }
