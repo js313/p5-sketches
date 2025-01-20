@@ -40,9 +40,11 @@ class Polygon {
     this.torque = 0;
     this.area = this.calculateArea();
     this.momentOfInertia = this.calculateMomentOfInertia();
+    this.momentOfInertia =
+      this.momentOfInertia < 15000 ? 15000 : this.momentOfInertia;
     this.invMomentOfInertia = 1 / this.momentOfInertia;
 
-    console.log(this.area, this.momentOfInertia);
+    // console.log(this.area, this.momentOfInertia, this.mass);
   }
 
   calculateArea() {
@@ -75,13 +77,6 @@ class Polygon {
     }
     return (I * rho) / 12;
   }
-
-  // calculateMomentOfInertia() {
-  //   if (this.mass === Infinity) return Infinity;
-  //   return (
-  //     (1 / 12) * this.mass * (2 * this.distFromCentre * this.distFromCentre)
-  //   ); // Simplified approximation
-  // }
 
   createShape() {
     if (!this.vertices) {
@@ -175,7 +170,7 @@ class Polygon {
   }
 
   applyRotationImpulse(impulse, point) {
-    this.angularVelocity =
+    this.angularVelocity +=
       p5.Vector.cross(p5.Vector.sub(point, this.centre), impulse).z *
       this.invMomentOfInertia;
   }

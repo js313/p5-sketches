@@ -2,20 +2,20 @@
 
 const bgColor = "#070831"; // (7, 8, 49)
 
-let polygonCount = 6;
-let manuallyAddedPolygons = 4;
+let polygonCount = 5;
+let manuallyAddedPolygons = 5;
 let polygons = [];
 let controllablePolygon = null;
 let gravity = null;
 
 function windowResized() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(windowWidth / 2, windowHeight);
   background(bgColor); // to fix color changing on window resize
 }
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  gravity = createVector(0, 10);
+  createCanvas(windowWidth / 2, windowHeight);
+  gravity = createVector(0, 0.98);
   polygons.push(
     new Polygon({
       centre: createVector(300, 300),
@@ -39,9 +39,44 @@ function setup() {
         mass: random(5, 100),
         maxSpeed: random(5, 10),
         elasticity: 0.5,
+        controllable: true,
       })
     );
   }
+  polygons.push(
+    new Polygon({
+      centre: createVector(200, height / 2 - 125),
+      numVertices: 4,
+      distFromCentre: 100,
+      vertices: [
+        createVector(50, height / 2 - 200),
+        createVector(350, height / 2 - 100),
+        createVector(350, height / 2 - 50),
+        createVector(50, height / 2 - 150),
+      ],
+      mass: 10000,
+      maxSpeed: 0,
+      elasticity: 0.5,
+      movable: false,
+    })
+  );
+  polygons.push(
+    new Polygon({
+      centre: createVector(550, height / 2),
+      numVertices: 4,
+      distFromCentre: 100,
+      vertices: [
+        createVector(700, height / 2 - 50),
+        createVector(400, height / 2 + 100),
+        createVector(400, height / 2 + 50),
+        createVector(700, height / 2 - 100),
+      ],
+      mass: 10000,
+      maxSpeed: 0,
+      elasticity: 0.5,
+      movable: false,
+    })
+  );
   polygons.push(
     new Polygon({
       centre: createVector(5, (height / 2 - height + 101) / 2),
@@ -96,6 +131,8 @@ function setup() {
   controllablePolygon = polygons[0];
 }
 
+// let frameCounter = 0;
+
 function draw() {
   background(bgColor);
 
@@ -107,16 +144,35 @@ function draw() {
       mouseX,
       mouseY
     );
+    // polygons.push(
+    //   new Polygon({
+    //     centre: createVector(mouseX, mouseY),
+    //     numVertices: Math.floor(random(4, 10)),
+    //     distFromCentre: random(20, 30),
+    //     mass: random(5, 100),
+    //     maxSpeed: random(5, 10),
+    //     elasticity: 0.5,
+    //     controllable: true,
+    //   })
+    // );
+
+    if (polygons[polygons.length - 1].numVertices < 4) console.log("aiusbfwer");
+
+    polygonCount++;
   }
 
   for (let polygon of polygons) {
     collisionCheck();
-    polygon.applyForce(gravity);
+    polygon.applyForce(gravity.copy().mult(polygon.mass));
     polygon.update();
   }
   if (controllablePolygon) controllablePolygon.move();
 
   displayFPS();
+  // if (frameCounter < 300) {
+  //   saveCanvas(`frame-${nf(frameCounter, 4)}`, "png");
+  //   frameCounter++;
+  // }
 }
 
 function displayFPS() {
@@ -133,17 +189,6 @@ function collisionCheck() {
         satCollision(polygons[i], polygons[j]) ?? {};
       if (mtv) {
         collisionResolution(polygons[i], polygons[j], mtv, collisionPoints);
-        collisionPoints.forEach((pointInfo) => {
-          stroke(255, 0, 0);
-          strokeWeight(10);
-
-          let pointtd =
-            pointInfo.polygon === 1
-              ? polygons[i].vertices[pointInfo.pointIndex]
-              : polygons[j].vertices[pointInfo.pointIndex];
-          if (!pointtd) console.log(pointInfo);
-          point(pointtd.x, pointtd.y, 10);
-        });
       }
     }
   }
@@ -162,4 +207,16 @@ function touchEnded() {
       p5.Vector.sub(createVector(mouseX, mouseY), controllablePolygon.centre)
     );
   }
+  // polygons.push(
+  //   new Polygon({
+  //     centre: createVector(mouseX, mouseY),
+  //     numVertices: Math.floor(random(3, 10)),
+  //     distFromCentre: random(20, 30),
+  //     mass: random(5, 100),
+  //     maxSpeed: random(5, 10),
+  //     elasticity: 0.5,
+  //     controllable: true,
+  //   })
+  // );
+  // polygonCount++;
 }
