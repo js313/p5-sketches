@@ -19,4 +19,4 @@ Contributions are welcome! If you have ideas or improvements, feel free to:
 
 License
 
-This project is licensed under the MIT License. See the [LICENSE]() file for details.
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/js313/p5-sketches/blob/main/LICENSE) file for details.
